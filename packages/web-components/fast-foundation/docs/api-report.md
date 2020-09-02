@@ -224,8 +224,6 @@ export class DataGrid extends FASTElement {
     columnsData: DataGridColumn[] | null;
     // @internal (undocumented)
     connectedCallback(): void;
-    // @internal (undocumented)
-    disconnectedCallback(): void;
     static generateColumns: (row: object) => DataGridColumn[];
     // @internal
     gridRows: HTMLElement;
@@ -248,8 +246,7 @@ export class DataGridCell extends FASTElement {
     columnData: DataGridColumn | null;
     // @internal (undocumented)
     connectedCallback(): void;
-    // @internal (undocumented)
-    resolveTemplate(): import("@microsoft/fast-element").ViewTemplate<DataGridCell, any>;
+    gridColumnIndex: number;
     row: string;
     rowData: object | null;
     }
