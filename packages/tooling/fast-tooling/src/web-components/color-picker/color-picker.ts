@@ -10,6 +10,15 @@ import { isNullOrWhiteSpace } from "@microsoft/fast-web-utilities";
 import { FormAssociatedColorPicker } from "./color-picker.form-associated";
 
 /**
+ * This is currently experimental, any use of the color picker must include the following
+ * imports and register with the DesignSystem
+ *
+ * import { fastTextField } from "@microsoft/fast-components";
+ * import { DesignSystem } from "@microsoft/fast-foundation";
+ * DesignSystem.getOrCreate().register(fastTextField());
+ */
+
+/**
  * Simple class for storing all of the color picker UI observable values.
  */
 class ColorPickerUI {

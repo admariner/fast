@@ -1,33 +1,18 @@
-import { customElement, observable } from "@microsoft/fast-element";
-import { ActivityType, HTMLRenderLayer } from "../html-render-layer/html-render-layer";
-import { HTMLRenderLayerNavigationStyles } from "./html-render-layer-navigation.style";
-import { HTMLRenderLayerNavigationTemplate } from "./html-render-layer-navigation.template";
+import { observable } from "@microsoft/fast-element";
+import {
+    ActivityType,
+    HTMLRenderLayer,
+    OverlayPosition,
+} from "../html-render-layer/html-render-layer";
 
-class OverylayPosition {
-    public top: number;
-    public left: number;
-    public width: number;
-    public height: number;
-
-    constructor(top: number, left: number, width: number, height: number) {
-        this.top = top;
-        this.left = left;
-        this.width = width;
-        this.height = height;
-    }
-}
-
-@customElement({
-    name: "fast-tooling-html-render-layer-navigation",
-    template: HTMLRenderLayerNavigationTemplate,
-    styles: HTMLRenderLayerNavigationStyles,
-})
-export class HTMLRenderLayerNavgation extends HTMLRenderLayer {
-    @observable
-    public hoverPosition: OverylayPosition = new OverylayPosition(0, 0, 0, 0);
+export class HTMLRenderLayerNavigation extends HTMLRenderLayer {
+    public layerActivityId: string = "NavLayer";
 
     @observable
-    public clickPosition: OverylayPosition = new OverylayPosition(0, 0, 0, 0);
+    public hoverPosition: OverlayPosition = new OverlayPosition(0, 0, 0, 0);
+
+    @observable
+    public clickPosition: OverlayPosition = new OverlayPosition(0, 0, 0, 0);
 
     @observable
     public hoverLayerActive: boolean = false;
@@ -36,32 +21,74 @@ export class HTMLRenderLayerNavgation extends HTMLRenderLayer {
     public clickLayerActive: boolean = false;
 
     @observable
+    public clickLayerHide: boolean = false;
+
+    @observable
+    public hoverLayerHide: boolean = false;
+
+    @observable
     public clickPillContent: string = "";
 
     @observable
     public hoverPillContent: string = "";
 
-    private GetPositionFromElement(target: HTMLElement): OverylayPosition {
-        const pos: DOMRectList = target.getClientRects();
-        return new OverylayPosition(pos[0].top, pos[0].left, pos[0].width, pos[0].height);
+    private timeoutRef: number = null;
+    private currElementRef: HTMLElement = null;
+
+    connectedCallback() {
+        super.connectedCallback();
+
+        window.addEventListener("scroll", this.handleWindowChange);
+        window.addEventListener("resize", this.handleWindowChange);
     }
 
-    private handleSelect(datadictionaryId: string, elementRef: HTMLElement) {
+    disconnectedCallback() {
+        super.disconnectedCallback();
+
+        window.removeEventListener("scroll", this.handleWindowChange);
+        window.removeEventListener("resize", this.handleWindowChange);
+    }
+
+    private handleWindowChange = () => {
+        if (this.hoverLayerActive) {
+            this.handleUnHighlight();
+        }
+        if (this.clickLayerActive && this.currElementRef !== null) {
+            this.clickLayerHide = true;
+            if (this.timeoutRef !== null) {
+                window.clearTimeout(this.timeoutRef);
+            }
+            this.timeoutRef = window.setTimeout(() => {
+                if (this.clickLayerActive && this.currElementRef !== null) {
+                    this.clickPosition = this.GetPositionFromElement(this.currElementRef);
+                }
+                this.clickLayerHide = false;
+            }, 40);
+        }
+    };
+
+    private GetPositionFromElement(target: HTMLElement): OverlayPosition {
+        const pos: DOMRect = target.getBoundingClientRect();
+        return new OverlayPosition(pos.top, pos.left, pos.width, pos.height);
+    }
+
+    private handleSelect(dataDictionaryId: string, elementRef: HTMLElement) {
         const title =
             this.schemaDictionary && this.dataDictionary
-                ? this.schemaDictionary[this.dataDictionary[0][datadictionaryId].schemaId]
+                ? this.schemaDictionary[this.dataDictionary[0][dataDictionaryId].schemaId]
                       .title
                 : null;
         this.clickPosition = this.GetPositionFromElement(elementRef);
         this.clickLayerActive = true;
+        this.currElementRef = elementRef;
         this.clickPillContent = title || "Untitled";
         this.hoverLayerActive = false;
     }
 
-    private handleHighlight(datadictionaryId: string, elementRef: HTMLElement) {
+    private handleHighlight(dataDictionaryId: string, elementRef: HTMLElement) {
         const title =
             this.schemaDictionary && this.dataDictionary
-                ? this.schemaDictionary[this.dataDictionary[0][datadictionaryId].schemaId]
+                ? this.schemaDictionary[this.dataDictionary[0][dataDictionaryId].schemaId]
                       .title
                 : null;
         this.hoverPosition = this.GetPositionFromElement(elementRef);
@@ -75,26 +102,47 @@ export class HTMLRenderLayerNavgation extends HTMLRenderLayer {
 
     private handleClear() {
         this.clickLayerActive = false;
+        this.currElementRef = null;
+        this.clickLayerActive = false;
         this.clickPillContent = "";
     }
 
+    private handleUpdate() {
+        if (this.clickLayerActive) {
+            this.clickPosition = this.GetPositionFromElement(this.currElementRef);
+        }
+    }
+
     public elementActivity(
+        layerActivityId: string,
         activityType: ActivityType,
-        datadictionaryId: string,
-        elementRef: HTMLElement
+        dataDictionaryId: string,
+        elementRef: Node
     ) {
+        if (layerActivityId === this.layerActivityId) {
+            return;
+        }
         switch (activityType) {
             case ActivityType.hover:
-                this.handleHighlight(datadictionaryId, elementRef);
+                this.handleHighlight(dataDictionaryId, elementRef as HTMLElement);
                 break;
             case ActivityType.blur:
                 this.handleUnHighlight();
                 break;
             case ActivityType.click:
-                this.handleSelect(datadictionaryId, elementRef);
+                this.handleSelect(dataDictionaryId, elementRef as HTMLElement);
                 break;
             case ActivityType.clear:
                 this.handleClear();
+                break;
+            case ActivityType.update:
+                this.handleUpdate();
+                break;
+            case ActivityType.takeFocus:
+                this.hoverLayerHide = true;
+                break;
+            case ActivityType.releaseFocus:
+                this.hoverLayerHide = false;
                 break;
         }
     }

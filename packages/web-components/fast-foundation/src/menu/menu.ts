@@ -1,4 +1,4 @@
-import { FASTElement, observable } from "@microsoft/fast-element";
+import { observable } from "@microsoft/fast-element";
 import { inRange, invert } from "lodash-es";
 import {
     isHTMLElement,
@@ -7,7 +7,8 @@ import {
     keyCodeEnd,
     keyCodeHome,
 } from "@microsoft/fast-web-utilities";
-import { MenuItem, MenuItemRole } from "../menu-item/index";
+import { MenuItem, MenuItemColumnCount, MenuItemRole } from "../menu-item/index";
+import { FoundationElement } from "../foundation-element";
 
 /**
  * A Menu Custom HTML Element.
@@ -15,7 +16,7 @@ import { MenuItem, MenuItemRole } from "../menu-item/index";
  *
  * @public
  */
-export class Menu extends FASTElement {
+export class Menu extends FoundationElement {
     /**
      * @internal
      */
@@ -144,11 +145,13 @@ export class Menu extends FASTElement {
     };
 
     private handleItemFocus = (e: FocusEvent) => {
-        this.menuItems[this.focusIndex].setAttribute("tabindex", "-1");
+        const targetItem: HTMLElement = e.target as HTMLElement;
 
-        const targetItem = e.target as MenuItem;
-        this.focusIndex = this.menuItems.indexOf(targetItem);
-        targetItem.setAttribute("tabindex", "0");
+        if (targetItem !== this.menuItems[this.focusIndex]) {
+            this.menuItems[this.focusIndex].setAttribute("tabindex", "-1");
+            this.focusIndex = this.menuItems.indexOf(targetItem);
+            targetItem.setAttribute("tabindex", "0");
+        }
     };
 
     private handleExpandedChanged = (e: Event): void => {
@@ -192,10 +195,46 @@ export class Menu extends FASTElement {
             this.focusIndex = 0;
         }
 
+        let indent: MenuItemColumnCount;
+
+        function elementIndent(el: HTMLElement): MenuItemColumnCount {
+            if (!(el instanceof MenuItem)) {
+                return 1;
+            }
+            if (
+                el.role !== MenuItemRole.menuitem &&
+                el.querySelector("[slot=start]") === null
+            ) {
+                return 1;
+            } else if (
+                el.role === MenuItemRole.menuitem &&
+                el.querySelector("[slot=start]") !== null
+            ) {
+                return 1;
+            } else if (
+                el.role !== MenuItemRole.menuitem &&
+                el.querySelector("[slot=start]") !== null
+            ) {
+                return 2;
+            } else {
+                return 0;
+            }
+        }
+
+        indent = menuItems.reduce((accum, current) => {
+            const elementValue = elementIndent(current);
+
+            return accum > elementValue ? accum : elementValue;
+        }, 0);
+
         menuItems.forEach((item: HTMLElement, index: number) => {
             item.setAttribute("tabindex", index === 0 ? "0" : "-1");
             item.addEventListener("expanded-change", this.handleExpandedChanged);
             item.addEventListener("focus", this.handleItemFocus);
+
+            if (item instanceof MenuItem) {
+                item.startColumnCount = indent;
+            }
         });
     };
 

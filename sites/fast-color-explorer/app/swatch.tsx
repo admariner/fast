@@ -1,29 +1,21 @@
-import React from "react";
+import { applyElevation } from "@microsoft/fast-components-styles-msft";
 import manageJss, {
     ComponentStyleSheet,
     DesignSystemConsumer,
 } from "@microsoft/fast-jss-manager-react";
+import { format } from "@microsoft/fast-jss-utilities";
 import classnames from "classnames";
+import React from "react";
+import { ColorsDesignSystem } from "./design-system";
 import {
-    applyElevation,
     backgroundColor,
-    DesignSystemResolver,
-    designUnit,
-    elevation,
-    ElevationMultiplier,
-    fontWeight,
-    neutralForegroundHint,
-    neutralForegroundRest,
-    neutralOutlineRest,
-} from "@microsoft/fast-components-styles-msft";
-import { contrastRatio, parseColorHexRGB } from "@microsoft/fast-colors";
-import {
     ColorRecipe,
     contrast,
-} from "@microsoft/fast-components-styles-msft/dist/utilities/color/common";
-import { format } from "@microsoft/fast-jss-utilities";
-import { ColorsDesignSystem } from "./design-system";
-import { ComponentTypes } from "./state";
+    DesignSystemResolver,
+    neutralForegroundHint,
+    neutralStrokeRest,
+    SwatchResolver,
+} from "./recipes";
 
 export enum SwatchTypes {
     fill = "fill",
@@ -44,7 +36,6 @@ export interface SwatchClassNameContract {
 export interface SwatchManagedClasses {
     managedClasses: SwatchClassNameContract;
 }
-
 interface SwatchBaseProps extends SwatchManagedClasses {
     /**
      * The type of recipe the swatch represents
@@ -59,17 +50,17 @@ interface SwatchBaseProps extends SwatchManagedClasses {
     /**
      * The recipe to derive the fill color of the swatch
      */
-    fillRecipe: DesignSystemResolver<string>;
+    fillRecipe: SwatchResolver;
 
     /**
      * The recipe to derive text over the control
      */
-    foregroundRecipe: DesignSystemResolver<string>;
+    foregroundRecipe: SwatchResolver;
 
     /**
      * The recipe to derive the outline
      */
-    outlineRecipe?: DesignSystemResolver<string>;
+    outlineRecipe?: SwatchResolver;
 }
 
 const swatchTwoStyles: ComponentStyleSheet<
@@ -106,11 +97,11 @@ const swatchTwoStyles: ComponentStyleSheet<
     },
     swatch__foreground: {
         "& $swatch_icon": {
-            border: format<ColorsDesignSystem>("1px solid {0}", neutralOutlineRest),
+            border: format<ColorsDesignSystem>("1px solid {0}", neutralStrokeRest),
             "&::before": {
                 fontSize: "13px",
                 content: "'A'",
-                fontWeight: fontWeight.normal,
+                fontWeight: "400",
             },
         },
     },

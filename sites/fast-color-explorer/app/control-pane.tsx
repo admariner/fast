@@ -1,23 +1,10 @@
 import { get, values } from "lodash-es";
 import { ColorRGBA64, parseColorHexRGB } from "@microsoft/fast-colors";
-import {
-    backgroundColor,
-    cornerRadius,
-    elevation,
-    ElevationMultiplier,
-    height,
-    neutralDividerRest,
-    neutralFillInputRest,
-    neutralFocus,
-    neutralForegroundRest,
-    neutralOutlineRest,
-} from "@microsoft/fast-components-styles-msft";
 import manageJss, {
     ComponentStyleSheet,
-    DesignSystem,
     ManagedClasses,
 } from "@microsoft/fast-jss-manager-react";
-import { format, toPx } from "@microsoft/fast-jss-utilities";
+import { format } from "@microsoft/fast-jss-utilities";
 import { Pane } from "@microsoft/fast-layouts-react";
 import classnames from "classnames";
 import {
@@ -33,13 +20,22 @@ import {
 import React from "react";
 import { SketchPicker } from "react-color";
 import { connect } from "react-redux";
+import { height } from "@microsoft/fast-components-styles-msft";
 import {
     AccentColors,
     defaultAccentColor,
     defaultNeutralColor,
     neutralColors,
 } from "./colors";
-import { ColorsDesignSystem } from "./design-system";
+import { bridge, ColorsDesignSystem } from "./design-system";
+import {
+    backgroundColor,
+    focusStrokeOuter,
+    neutralFillInputRest,
+    neutralForegroundRest,
+    neutralStrokeDividerRest,
+    neutralStrokeRest,
+} from "./recipes";
 import {
     AppState,
     ComponentTypes,
@@ -73,82 +69,75 @@ export interface ControlPaneState {
 
 const accentShortcuts: string[] = values(AccentColors);
 
-const styles: any = (
-    designSystem: ColorsDesignSystem
-): ComponentStyleSheet<any, ColorsDesignSystem> => {
-    return {
-        "@global": {
-            body: {
-                fontFamily: '"Segoe UI", Arial, sans-serif',
-                fontSize: "14px",
-                margin: "0",
-            },
-            ".sketch-picker": {
-                display: "flex",
-                flexDirection: "column",
-                boxSizing: "border-box !important",
-                width: "100% !important",
-                background: "transparent !important",
-                boxShadow: "none !important",
-                "& > div": {
-                    "&:nth-child(1)": {
-                        order: "2",
-                    },
-                    "&:nth-child(2)": {
-                        display: "none !important",
-                    },
-                    "&:nth-child(3)": {
-                        order: "4",
-                        paddingBottom: "4px",
-                    },
-                    "&:nth-child(4)": {
-                        borderTop: "none !important",
-                        paddingTop: "0 !important",
+const styles: ComponentStyleSheet<any, ColorsDesignSystem> = {
+    "@global": {
+        body: {
+            fontFamily: '"Segoe UI", Arial, sans-serif',
+            fontSize: "14px",
+            margin: "0",
+        },
+        ".sketch-picker": {
+            display: "flex",
+            flexDirection: "column",
+            boxSizing: "border-box !important",
+            width: "100% !important",
+            background: "transparent !important",
+            boxShadow: "none !important",
+            "& > div": {
+                "&:nth-child(1)": {
+                    order: "2",
+                },
+                "&:nth-child(2)": {
+                    display: "none !important",
+                },
+                "&:nth-child(3)": {
+                    order: "4",
+                    paddingBottom: "4px",
+                },
+                "&:nth-child(4)": {
+                    borderTop: "none !important",
+                    paddingTop: "0 !important",
+                    "& div": {
+                        width: "24px !important",
+                        height: "24px !important",
                         "& div": {
-                            width: "24px !important",
-                            height: "24px !important",
-                            "& div": {
-                                borderRadius: format(
-                                    "{0} !important",
-                                    toPx(cornerRadius)
-                                )(designSystem),
-                            },
+                            borderRadius: "3px !important",
                         },
                     },
                 },
             },
-            ".sketch-picker input": {
-                boxShadow: "none !important",
-                background: neutralFillInputRest(designSystem),
-                color: neutralForegroundRest(designSystem),
-                border: `1px solid ${neutralOutlineRest(designSystem)} !important`,
-                height: height()(designSystem),
-                fontSize: "14px !important",
-                borderRadius: format("{0} !important", toPx(cornerRadius))(designSystem),
-                paddingTop: "0 !important",
-                paddingBottom: "0 !important",
-                "&:focus": {
-                    outline: "none",
-                    boxShadow: `0 0 0 2px ${neutralFocus(designSystem)} inset !important`,
-                },
-            },
-            ".sketch-picker .flexbox-fix span": {
-                color: `${neutralForegroundRest(designSystem)} !important`,
-            },
         },
-        controlPane: {
-            position: "relative",
-            zIndex: "1",
-            padding: "12px",
-            boxSizing: "border-box",
+        ".sketch-picker input": {
+            boxShadow: "none !important",
+            background: neutralFillInputRest,
             color: neutralForegroundRest,
-            height: "100%",
-            maxWidth: "300px",
-            borderLeft: `1px solid ${neutralDividerRest(designSystem)}`,
-            background: backgroundColor,
-            overflow: "auto",
+            border: format("1px solid {0} !important", neutralStrokeRest),
+            height: bridge(height()),
+            fontSize: "14px !important",
+            borderRadius: "3px !important",
+            paddingTop: "0 !important",
+            paddingBottom: "0 !important",
+            "&:focus": {
+                outline: "none",
+                boxShadow: format("0 0 0 2px {0} inset !important", focusStrokeOuter),
+            },
         },
-    };
+        ".sketch-picker .flexbox-fix span": {
+            color: format("{0} !important", neutralForegroundRest),
+        },
+    },
+    controlPane: {
+        position: "relative",
+        zIndex: "1",
+        padding: "12px",
+        boxSizing: "border-box",
+        color: neutralForegroundRest,
+        height: "100%",
+        maxWidth: "300px",
+        borderLeft: format("1px solid {0}", neutralStrokeDividerRest),
+        background: backgroundColor,
+        overflow: "auto",
+    },
 };
 
 function titleCase(str: string): string {

@@ -143,7 +143,7 @@ module.exports = function (config) {
             loader: "istanbul-instrumenter-loader",
             options: { esModules: true },
             test: /\.[tj]s$/,
-            include: path.resolve(__dirname, './dist/')
+            include: path.resolve(__dirname, "./dist/"),
         });
         options.reporters = ["coverage-istanbul", ...options.reporters];
         options.coverageIstanbulReporter = {
@@ -153,10 +153,10 @@ module.exports = function (config) {
             thresholds: {
                 emitWarning: false,
                 global: {
-                    statements: 90,
-                    lines: 90,
-                    branches: 90,
-                    functions: 90,
+                    statements: 75,
+                    lines: 75,
+                    branches: 75,
+                    functions: 75,
                 },
             },
         };

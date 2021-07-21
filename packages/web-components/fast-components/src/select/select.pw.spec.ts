@@ -1,10 +1,10 @@
+import { ArrowKeys } from "@microsoft/fast-web-utilities";
 import type {
     ListboxOption as FASTOption,
     Select as FASTSelectType,
 } from "@microsoft/fast-foundation";
 import { expect } from "chai";
 import type { ElementHandle } from "playwright";
-import type { FASTDesignSystemProvider } from "../design-system-provider";
 
 type FASTSelect = HTMLElement & FASTSelectType;
 
@@ -16,12 +16,8 @@ describe("FASTSelect", function () {
 
         this.documentHandle = await this.page.evaluateHandle(() => document);
 
-        this.providerHandle = (await this.page.$("#root")) as ElementHandle<
-            FASTDesignSystemProvider
-        >;
-
         this.setupHandle = await this.page.evaluateHandle(
-            ([document, provider]) => {
+            (document) => {
                 const element = document.createElement("fast-select") as FASTSelect;
 
                 for (let i = 1; i <= 3; i++) {
@@ -31,12 +27,9 @@ describe("FASTSelect", function () {
                     element.appendChild(option);
                 }
 
-                provider.appendChild(element);
+                document.body.appendChild(element)
             },
-            [this.documentHandle, this.providerHandle] as [
-                ElementHandle<Document>,
-                ElementHandle<FASTDesignSystemProvider>
-            ]
+            this.documentHandle
         );
     });
 
@@ -197,6 +190,36 @@ describe("FASTSelect", function () {
         });
     });
 
+    describe("should emit an event when focused and receives keyboard interaction", function () {
+        describe("while closed", function () {
+            for (const direction of Object.values(ArrowKeys)) {
+                describe(`via ${direction} key`, function () {
+                    for (const eventName of ["change", "input"]) {
+                        it(`of type '${eventName}'`, async function () {
+                            const element = (await this.page.waitForSelector(
+                                "fast-select"
+                            )) as ElementHandle<FASTSelect>;
+
+                            await this.page.exposeFunction("sendEvent", type =>
+                                expect(type).to.equal(eventName)
+                            );
+
+                            await element.evaluate((node, eventName) => {
+                                node.addEventListener(
+                                    eventName,
+                                    async (e: CustomEvent) =>
+                                        await window["sendEvent"](e.type)
+                                );
+                            }, eventName);
+
+                            await element.press(direction);
+                        });
+                    }
+                });
+            }
+        });
+    });
+
     describe("should change the value when focused and receives keyboard interaction", function () {
         it("via arrow down key", async function () {
             const element = (await this.page.waitForSelector(
@@ -248,6 +271,50 @@ describe("FASTSelect", function () {
             await element.press("End");
 
             expect(await element.evaluate(node => node.value)).to.equal("3");
+        });
+    });
+
+    describe("when opened", function () {
+        it("should scroll the selected option into view", async function () {
+            const element = (await this.page.waitForSelector(
+                "fast-select"
+            )) as ElementHandle<FASTSelect>;
+
+            await element.evaluate(element => {
+                element.innerHTML = "";
+                for (let i = 0; i < 50; i++) {
+                    const option = document.createElement("fast-option") as FASTOption;
+                    option.value = `${i}`;
+                    option.textContent = `option ${i}`;
+                    element.appendChild(option);
+                }
+            });
+
+            const selectedOption = (await element.$(".listbox")) as ElementHandle<
+                FASTOption
+            >;
+
+            await element.evaluate(node => (node.selectedIndex = 35));
+
+            expect(
+                await element.evaluate(node => node.firstSelectedOption.value)
+            ).to.equal("35");
+
+            await element.click();
+
+            await selectedOption.waitForElementState("visible");
+
+            expect(
+                await selectedOption.evaluate(node => node.scrollTop)
+            ).to.be.closeTo(811, 16);
+
+            await element.evaluate(node => (node.selectedIndex = 0));
+
+            await element.waitForElementState("stable");
+
+            expect(
+                await selectedOption.evaluate(node => node.scrollTop)
+            ).to.be.closeTo(6, 16);
         });
     });
 });

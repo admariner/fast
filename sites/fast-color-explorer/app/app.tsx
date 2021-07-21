@@ -1,33 +1,28 @@
-import { Canvas, Container, Row } from "@microsoft/fast-layouts-react";
-import {
-    DesignSystem,
-    neutralLayerCard,
-    neutralLayerCardContainer,
-    neutralLayerFloating,
-    neutralLayerL1,
-    neutralLayerL2,
-    neutralLayerL3,
-    neutralLayerL4,
-    palette,
-    PaletteType,
-} from "@microsoft/fast-components-styles-msft";
+import { StandardLuminance } from "@microsoft/fast-components";
+import { Background } from "@microsoft/fast-components-react-msft";
 import { DesignSystemProvider } from "@microsoft/fast-jss-manager-react";
+import { Canvas, Container, Row } from "@microsoft/fast-layouts-react";
 import React from "react";
 import { connect } from "react-redux";
-import { Background } from "@microsoft/fast-components-react-msft";
-import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
+import { FixedSizeList } from "react-window";
+import ColorBlocks from "./color-blocks";
+import { ControlPane } from "./control-pane";
+import { ColorsDesignSystem } from "./design-system";
+import { Gradient } from "./gradient";
 import {
     ColorRecipe,
+    neutralLayer1,
+    neutralLayer2,
+    neutralLayer3,
+    neutralLayer4,
+    neutralLayerCardContainer,
+    neutralLayerFloating,
     Swatch,
-} from "@microsoft/fast-components-styles-msft/dist/utilities/color/common";
-import { StandardLuminance } from "@microsoft/fast-components-styles-msft";
-import { AppState } from "./state";
-import { ControlPane } from "./control-pane";
-import ColorBlocks from "./color-blocks";
-import { Gradient } from "./gradient";
-import { ColorsDesignSystem } from "./design-system";
+    SwatchResolver,
+} from "./recipes";
 import { Footer } from "./site-footer";
+import { AppState } from "./state";
 
 interface AppProps {
     designSystem: ColorsDesignSystem;
@@ -48,14 +43,13 @@ class App extends React.Component<AppProps, {}> {
         },
     };
 
-    private backgroundRecipes: Array<[ColorRecipe<string>, string]> = [
+    private backgroundRecipes: Array<[SwatchResolver, string]> = [
         [neutralLayerFloating, "neutralLayerFloating"],
-        [neutralLayerCard, "neutralLayerCard"],
         [neutralLayerCardContainer, "neutralLayerCardContainer"],
-        [neutralLayerL1, "neutralLayerL1"],
-        [neutralLayerL2, "neutralLayerL2"],
-        [neutralLayerL3, "neutralLayerL3"],
-        [neutralLayerL4, "neutralLayerL4"],
+        [neutralLayer1, "neutralLayer1"],
+        [neutralLayer2, "neutralLayer2"],
+        [neutralLayer3, "neutralLayer3"],
+        [neutralLayer4, "neutralLayer4"],
     ];
 
     public render(): React.ReactNode {
@@ -67,9 +61,7 @@ class App extends React.Component<AppProps, {}> {
                             <Container jssStyleSheet={this.containerStyleOverrides}>
                                 <Row height={20} minHeight={20}>
                                     <Gradient
-                                        colors={palette(PaletteType.neutral)(
-                                            this.props.designSystem
-                                        )}
+                                        colors={this.props.designSystem.neutralPalette}
                                         markedColor={this.props.neutralBaseColor}
                                         createAnchors={true}
                                         scrollToItem={this.handleGradientScroll}
@@ -77,9 +69,7 @@ class App extends React.Component<AppProps, {}> {
                                 </Row>
                                 <Row height={20} minHeight={20}>
                                     <Gradient
-                                        colors={palette(PaletteType.accent)(
-                                            this.props.designSystem
-                                        )}
+                                        colors={this.props.designSystem.accentPalette}
                                         markedColor={this.props.accentBaseColor}
                                         createAnchors={false}
                                     />
@@ -96,9 +86,7 @@ class App extends React.Component<AppProps, {}> {
                                 </Row>
                             </Container>
                         </Canvas>
-                        <Background value={neutralLayerL4}>
-                            <ControlPane />
-                        </Background>
+                        <ControlPane />
                     </Row>
                 </Container>
                 <Footer />
@@ -176,9 +164,13 @@ class App extends React.Component<AppProps, {}> {
     private resolveRecipes = (
         luminance: number
     ): Array<{ color: string; title: string }> => {
-        const designSystem: DesignSystem = Object.assign({}, this.props.designSystem, {
-            baseLayerLuminance: luminance,
-        });
+        const designSystem: ColorsDesignSystem = Object.assign(
+            {},
+            this.props.designSystem,
+            {
+                baseLayerLuminance: luminance,
+            }
+        );
         return this.backgroundRecipes
             .map((conf: [ColorRecipe<string>, string]): {
                 color: string;

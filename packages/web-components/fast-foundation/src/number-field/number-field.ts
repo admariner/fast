@@ -1,8 +1,24 @@
-import { attr, DOM, nullableNumberConverter, observable } from "@microsoft/fast-element";
+import {
+    attr,
+    DOM,
+    nullableNumberConverter,
+    observable,
+    SyntheticViewTemplate,
+} from "@microsoft/fast-element";
 import { StartEnd } from "../patterns/index";
 import { applyMixins } from "../utilities/index";
+import type { FoundationElementDefinition } from "../foundation-element";
 import { DelegatesARIATextbox } from "../text-field/index";
 import { FormAssociatedNumberField } from "./number-field.form-associated";
+
+/**
+ * Number Field configuration options
+ * @public
+ */
+export type NumberFieldOptions = FoundationElementDefinition & {
+    stepDownGlyph?: string | SyntheticViewTemplate;
+    stepUpGlyph?: string | SyntheticViewTemplate;
+};
 
 /**
  * A Number Field Custom HTML Element.
@@ -111,6 +127,7 @@ export class NumberField extends FormAssociatedNumberField {
                 this.max = numb;
             }
         }
+        this.updateValue(this.value);
     }
 
     /**
@@ -131,6 +148,7 @@ export class NumberField extends FormAssociatedNumberField {
                 this.min = numb;
             }
         }
+        this.updateValue(this.value);
     }
 
     /**
@@ -153,42 +171,58 @@ export class NumberField extends FormAssociatedNumberField {
     public valueChanged(previousValue, nextValue): void {
         super.valueChanged(previousValue, nextValue);
 
-        const numb = parseFloat(nextValue);
-        let out: number | string = numb == nextValue ? nextValue : numb;
+        this.updateValue(nextValue);
+    }
 
-        if (nextValue === "" || isNaN(numb)) {
-            out = "";
-        } else if (this.min !== undefined && numb < this.min) {
-            out = this.min;
-        } else if (this.max !== undefined && numb > this.max) {
-            out = this.max;
+    /**
+     * Updates the value. Validates that it's a number, between the min
+     *  and max, updates the proxy and emits events.
+     *
+     * @param value - value to be validated
+     * @internal
+     */
+    private updateValue(value): void {
+        if (value === "" || isNaN(parseFloat(value))) {
+            value = "";
+        } else {
+            value = parseFloat(value);
+            if (this.min !== undefined && value < this.min) {
+                value = this.min;
+            } else if (this.max !== undefined && value > this.max) {
+                value = this.max;
+            }
+
+            value = parseFloat(value.toPrecision(12)).toString();
         }
 
-        this.value = out.toString();
-
-        if (this.proxy instanceof HTMLElement) {
-            this.proxy.value = this.value;
+        if (value != this.value) {
+            this.value = value;
+            if (this.proxy instanceof HTMLInputElement) {
+                this.proxy.value = this.value;
+            }
+            this.$emit("input");
+            this.$emit("change");
         }
     }
 
     /**
      * Increments the value using the step value
+     *
+     * @public
      */
     public stepUp(): void {
-        const steppedValue = parseFloat(this.value) + this.step;
-        const nextValue =
-            this.max !== undefined && steppedValue > this.max ? this.max : steppedValue;
-        this.value = parseFloat(nextValue.toPrecision(12)).toString();
+        const stepUpValue = this.step + (parseFloat(this.value) || 0);
+        this.updateValue(stepUpValue);
     }
 
     /**
      * Decrements the value using the step value
+     *
+     * @public
      */
     public stepDown(): void {
-        const steppedValue = parseFloat(this.value) - this.step;
-        const nextValue =
-            this.min !== undefined && steppedValue < this.min ? this.min : steppedValue;
-        this.value = parseFloat(nextValue.toPrecision(12)).toString();
+        const stepDownValue = (parseFloat(this.value) || 0) - this.step;
+        this.updateValue(stepDownValue);
     }
 
     /**

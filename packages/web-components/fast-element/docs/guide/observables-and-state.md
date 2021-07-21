@@ -122,7 +122,7 @@ export class Person {
 
 ### External observation
 
-Decorated properties can be subscribed to, to receive notification of changes in the property value. The templating engine uses this, but you can also directly subscribe as well. Here's how you would subscribe to changes in the `name` property pf a `Person` class:
+Decorated properties can be subscribed to, to receive notification of changes in the property value. The templating engine uses this, but you can also directly subscribe as well. Here's how you would subscribe to changes in the `name` property of a `Person` class:
 
 **Example: Subscribing to an Observable**
 
@@ -191,4 +191,20 @@ const handler = {
 };
 
 bindingObserver.subscribe(handler);
+```
+
+### Records 
+
+To inspect which observable objects and properties were accessed from a `BindingObserver`, you can get the observation records from `BindingObserver.records()` after observing the binding.
+
+**Example: Getting observation records**
+```ts
+const binding = (x: MyClass) => x.someBoolean ? x.valueA : x.valueB;
+const bindingObserver = Observable.binding(binding);
+const value = bindingObserver.observe({}, defaultExecutionContext);
+
+for (const record of bindingObserver.records()) {
+  // Do something with the binding's observable dependencies
+  console.log(record.propertySource, record.propertyName)
+}
 ```
